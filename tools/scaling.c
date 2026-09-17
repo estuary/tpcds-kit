@@ -254,25 +254,29 @@ ds_key_t
 get_rowcount(int table)
 {
 
-	static int bScaleSet = 0,
-      nScale;
+	static int bScaleSet = 0;
+	static double nScale;
 	int nTable,
 		nMultiplier,
 		i,
+		iScale,
 		nBadScale = 0,
 		nRowcountOffset = 0;
 	tdef *pTdef;
 	
 	if (!bScaleSet)
 	{		
-		nScale = get_int("SCALE");
+		nScale = get_dbl("SCALE");
 		if (nScale > 100000)
 			ReportErrorNoLine(QERR_BAD_SCALE, NULL, 1);
+
+		/* fractional scale factors use the 1GB band as their base */
+		iScale = (nScale < 1) ? 1 : (int)nScale;
 
 		memset(arRowcount, 0, sizeof(long) * MAX_TABLE);
 		for (nTable=CALL_CENTER; nTable <= MAX_TABLE; nTable++)
 		{
-			switch(nScale)
+			switch(iScale)
 			{
 			case 100000:
 				arRowcount[nTable].kBaseRowcount = dist_weight(NULL, "rowcounts", nTable + nRowcountOffset + 1, 9);
@@ -310,13 +314,13 @@ get_rowcount(int table)
 				switch(dist_member(NULL, "rowcounts", nTable + 1, 3))
 				{
 				case 2:
-					arRowcount[nTable].kBaseRowcount = LinearScale(nTable + nRowcountOffset , nScale);
+					arRowcount[nTable].kBaseRowcount = LinearScale(nTable + nRowcountOffset , iScale);
 					break;
 				case 1:
-					arRowcount[nTable].kBaseRowcount = StaticScale(nTable + nRowcountOffset , nScale);
+					arRowcount[nTable].kBaseRowcount = StaticScale(nTable + nRowcountOffset , iScale);
 					break;
 				case 3:
-					arRowcount[nTable].kBaseRowcount = LogScale(nTable + nRowcountOffset , nScale);
+					arRowcount[nTable].kBaseRowcount = LogScale(nTable + nRowcountOffset , iScale);
 					break;
 				}	/* switch(FL_SCALE_MASK) */
 				break;
@@ -333,6 +337,18 @@ get_rowcount(int table)
 				nMultiplier *= 10;
 			arRowcount[nTable].kBaseRowcount *= nMultiplier;
 
+			/*
+			* below 1GB, shrink every table proportionally except the fixed-size
+			* ones (static model, no multiplier), with a floor of one row
+			*/
+			if (nScale < 1 && arRowcount[nTable].kBaseRowcount >= 0)
+			{
+				if (!(dist_member(NULL, "rowcounts", nTable + 1, 3) == 1 && nMultiplier == 1))
+					arRowcount[nTable].kBaseRowcount = (int)(arRowcount[nTable].kBaseRowcount * nScale);
+				if (arRowcount[nTable].kBaseRowcount == 0)
+					arRowcount[nTable].kBaseRowcount = 1;
+			}
+
       } /* for each table */
 
 		
@@ -343,7 +359,7 @@ get_rowcount(int table)
 	}
 	
 	if ((table == INVENTORY))
-		return(sc_w_inventory(nScale));
+		return(sc_w_inventory((int)nScale));
 	if ((table == S_INVENTORY))
 		return(getIDCount(ITEM) * get_rowcount(WAREHOUSE) * 6);
 
