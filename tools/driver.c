@@ -470,6 +470,23 @@ main (int ac, char **av)
 		tabid = find_table("ABREVIATION", get_str("ABREVIATION"));
 	}
 
+	/*
+	* -_ROWCOUNT: report how many rows -TABLE holds at -SCALE and exit
+	*/
+	if (is_set("_ROWCOUNT"))
+	{
+		if (tabid == -1)
+		{
+			fprintf(stderr, "ERROR: _ROWCOUNT requires a single -TABLE\n");
+			exit(1);
+		}
+		pT = getSimpleTdefsByNumber(tabid);
+		if (pT->flags & FL_CHILD)
+			ReportErrorNoLine(QERR_TABLE_CHILD, pT->name, 1);
+		printf(HUGE_FORMAT "\n", get_rowcount(tabid));
+		return (0);
+	}
+
 	for (i=(is_set("UPDATE"))?S_BRAND:CALL_CENTER; (pT = getSimpleTdefsByNumber(i)); i++)
 	{
 
