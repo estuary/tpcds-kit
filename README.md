@@ -1,5 +1,65 @@
 # tpcds-kit
 
+## Estuary fork
+
+This is [Estuary](https://estuary.dev)'s fork of [gregrahn/tpcds-kit](https://github.com/gregrahn/tpcds-kit).
+It exists to drive the `source-tpc-ds` capture connector in
+[estuary/connectors](https://github.com/estuary/connectors), which runs `dsdgen`
+as a subprocess in stdout mode. The generator source remains subject to the TPC
+legal notice in [EULA.txt](EULA.txt) and at the top of every source file; the
+fork redistributes it with that notice intact, as DuckDB and Trino do.
+
+Changes on top of upstream, one commit each (diff `master` against upstream's
+`master` to see them all):
+
+1. `print`: the stdout option was registered as `_FILTER` but checked as
+   `FILTER`, so stdout mode never engaged.
+2. `print`: after selecting stdout the handle was overwritten by the table's
+   NULL file pointer ("Failed to open output file"). Also flush rather than
+   fclose stdout so a parent and its child table can both close it.
+3. `parallel`: `-PARALLEL`/`-CHILD` only chunked tables of 1M rows or more and
+   silently emitted nothing for other children of smaller tables. An explicit
+   `-PARALLEL` now chunks every table. Chunked output concatenates
+   byte-identically to unchunked output.
+4. `driver`: hidden `-_ROWCOUNT Y` flag prints the row count of `-TABLE` at
+   `-SCALE` and exits, following the existing hidden-flag convention.
+5. `build`: prototypes for three K&R-style definitions so the tree compiles
+   under gcc 14 and current clang without `-std=gnu89`.
+6. `scale`: fractional scale factors below 1, ported from DuckDB's tpcds
+   extension. Every table starts from its 1GB row count and is multiplied by
+   the fraction (floor of one row), except the fixed-size tables (date_dim,
+   time_dim, catalog_page, ship_mode, income_band and similar). Row counts at
+   sf=0.01 match `dsdgen(sf=0.01)` in DuckDB for every directly generated
+   table. Row *content* follows upstream dsdgen; DuckDB's embedded copy
+   diverges from upstream in text and null generation, so DuckDB's shipped
+   answer sets do not describe this output.
+7. `params`: string parameters up to 4095 characters (paths were strcpy'd into
+   80-byte buffers).
+8. `driver`: a command line over 200 characters produced a NULL dereference in
+   `ReportError`; it is now a warning and the recorded string is truncated.
+
+### Container image
+
+[`Dockerfile`](Dockerfile) builds `dsdgen` as a static Linux binary and ships
+it with `tpcds.idx` in an empty image, published on every push to `master` as
+`ghcr.io/estuary/dsdgen:<7-char commit sha>` and `:latest` for linux/amd64 and
+linux/arm64. Consume it with `COPY --from`:
+
+```dockerfile
+COPY --from=ghcr.io/estuary/dsdgen:<sha> /dsdgen /tpcds.idx /usr/local/bin/
+```
+
+Stream a table to stdout, always passing the distributions file explicitly:
+
+```
+dsdgen -SCALE 0.01 -TABLE store_sales -PARALLEL 4 -CHILD 1 -_FILTER Y -DISTRIBUTIONS /usr/local/bin/tpcds.idx
+```
+
+The three returns tables are emitted by their sales parent's process,
+interleaved on stdout; tell them apart by field count.
+
+## Upstream README
+
 The official TPC-DS tools can be found at [tpc.org](http://www.tpc.org/tpc_documents_current_versions/current_specifications.asp).
 
 This version is based on v2.10.0 and has been modified to:
