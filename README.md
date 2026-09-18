@@ -37,6 +37,10 @@ Changes on top of upstream, one commit each (diff `master` against upstream's
    80-byte buffers).
 8. `driver`: a command line over 200 characters produced a NULL dereference in
    `ReportError`; it is now a warning and the recorded string is truncated.
+9. `parallel`: when a chunk's first row fell exactly on a day boundary,
+   `skipDays` placed it on the following day and shifted that day's rows, so
+   chunked output differed from a serial run. Rare at 1GB and above, frequent
+   below. Chunks now concatenate byte-identically at every scale.
 
 ### Container image
 
