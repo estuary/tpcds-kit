@@ -1,0 +1,9 @@
+.git
+tools/*.o
+tools/dsdgen
+tools/dsqgen
+tools/distcomp
+tools/mkheader
+tools/checksum
+tools/tpcds.idx
+tools/.ctags_updated
