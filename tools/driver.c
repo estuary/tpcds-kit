@@ -410,7 +410,8 @@ main (int ac, char **av)
 		nArgLength = strlen(av[i]) + 1;
 		if ((nCommandLineLength + nArgLength) >= 200)
 		{
-			ReportError(QERR_CMDLINE_TOO_LONG, NULL, 0);
+			/* only dbgen_version records the command line; truncate it */
+			ReportErrorNoLine(QERR_CMDLINE_TOO_LONG, NULL, 0);
 			break;
 		}
 		strcat(g_szCommandLine, av[i]);
