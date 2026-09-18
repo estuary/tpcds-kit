@@ -68,7 +68,10 @@ print_close(int tbl)
 	fpOutfile = NULL;
 	if (pTdef->outfile)
 	{
-		fclose(pTdef->outfile);
+		if (pTdef->outfile == stdout)
+			fflush(stdout);
+		else
+			fclose(pTdef->outfile);
 		pTdef->outfile = NULL;
 	}
 
@@ -446,7 +449,7 @@ print_start (int tbl)
    current_table = tbl;
 
    if (is_set ("_FILTER"))
-	   fpOutfile = stdout;
+	   pTdef->outfile = stdout;
    else
    {
 	   if (pTdef->outfile == NULL)
