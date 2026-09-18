@@ -2,7 +2,7 @@ name: Publish dsdgen image
 
 on:
   push:
-    branches: [master]
+    branches: [master, estuary-patches]
   workflow_dispatch:
 
 permissions:
