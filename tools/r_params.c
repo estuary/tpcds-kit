@@ -46,7 +46,7 @@
 #include "tdefs.h"
 #include "release.h"
 
-#define PARAM_MAX_LEN	80
+#define PARAM_MAX_LEN	4096
 
 #ifndef TEST
 extern option_t options[];
@@ -219,7 +219,8 @@ set_int(char *var, char *val)
 	nParam = fnd_param(var);
 	if (nParam >= 0)
 	{
-		strcpy(params[options[nParam].index], val);
+		strncpy(params[options[nParam].index], val, PARAM_MAX_LEN - 1);
+		params[options[nParam].index][PARAM_MAX_LEN - 1] = '\0';
 		options[nParam].flags |= OPT_SET;
 	}
 	return;
@@ -355,7 +356,8 @@ init_params(void)
 	{
 		params[options[i].index] = (char *)malloc(PARAM_MAX_LEN * sizeof(char));
 		MALLOC_CHECK(params[options[i].index]);
-		strncpy(params[options[i].index], options[i].dflt, 80);
+		strncpy(params[options[i].index], options[i].dflt, PARAM_MAX_LEN - 1);
+		params[options[i].index][PARAM_MAX_LEN - 1] = '\0';
 		if (*options[i].dflt)
 			options[i].flags |= OPT_DFLT;
 	}
