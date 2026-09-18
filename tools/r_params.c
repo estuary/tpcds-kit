@@ -253,6 +253,23 @@ get_int(char *var)
 }
 
 /*
+ * Routine: get_dbl(char *var)
+ * Purpose: return the value of a numeric parameter as a double
+ */
+double
+get_dbl(char *var)
+{
+	int nParam;
+
+	init_params();
+	nParam = fnd_param(var);
+	if (nParam >= 0)
+		return(atof(params[options[nParam].index]));
+	else
+		return(0);
+}
+
+/*
  * Routine: set_str(int var, char *value)
  * Purpose: set a character parameter
  * Algorithm:
