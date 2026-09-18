@@ -125,7 +125,14 @@ skipDays(int nTable, ds_key_t *pRemainder)
      jDate += 1;
      *pRemainder = index;
   }
-  if (index > kFirstRow)
+  /*
+  * the loop stops on the first day whose cumulative row count reaches
+  * kFirstRow; that day, not the one after it, holds the chunk's first row.
+  * This also covers an exact boundary, which upstream mishandled: the first
+  * row of the chunk moved to the next day and the boundary day was skipped,
+  * so chunked output differed from a serial run.
+  */
+  if (kFirstRow > 1 && index >= kFirstRow)
   {
      jDate -= 1;
   }
