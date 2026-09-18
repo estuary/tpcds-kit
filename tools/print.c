@@ -445,7 +445,7 @@ print_start (int tbl)
 
    current_table = tbl;
 
-   if (is_set ("FILTER"))
+   if (is_set ("_FILTER"))
 	   fpOutfile = stdout;
    else
    {
